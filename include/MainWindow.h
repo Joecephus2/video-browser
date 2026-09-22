@@ -2,6 +2,9 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QStringList>
+
+class QListWidget;
 
 class MainWindow final : public QMainWindow
 {
@@ -10,6 +13,11 @@ public:
 
 private:
     QStringList findMissingDependencies() const;
+    void loadConfiguration();
+    void scanVideoDirectories();
+
+    QStringList videoDirectories;
+    QListWidget *videoList = nullptr;
 };
 
 #endif

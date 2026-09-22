@@ -1,10 +1,19 @@
 #include "MainWindow.h"
 
+#include <QDir>
+#include <QDirIterator>
+#include <QFile>
+#include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLabel>
+#include <QListWidget>
 #include <QMessageBox>
-#include <QProcessEnvironment>
 #include <QStandardPaths>
 #include <QStringList>
+#include <QVBoxLayout>
+#include <QWidget>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -14,40 +23,49 @@ MainWindow::MainWindow(QWidget *parent)
 
     setStyleSheet(
         "QMainWindow { background-color: #202124; color: #eeeeee; }"
-        "QLabel { color: #eeeeee; padding: 24px; }"
+        "QWidget { background-color: #202124; color: #eeeeee; }"
+        "QLabel { color: #eeeeee; padding: 12px; }"
+        "QListWidget {"
+        "  background-color: #292a2d;"
+        "  color: #eeeeee;"
+        "  border: 1px solid #444444;"
+        "  font-size: 14px;"
+        "}"
+        "QListWidget::item { padding: 8px; }"
+        "QListWidget::item:selected { background-color: #405d80; }"
     );
+
+    auto *centralWidget = new QWidget(this);
+    auto *layout = new QVBoxLayout(centralWidget);
+
+    auto *title = new QLabel("<h1>Video Browser</h1>", centralWidget);
+    title->setTextFormat(Qt::RichText);
+
+    videoList = new QListWidget(centralWidget);
+    videoList->setAlternatingRowColors(true);
+
+    layout->addWidget(title);
+    layout->addWidget(videoList);
+
+    setCentralWidget(centralWidget);
+
+    loadConfiguration();
+    scanVideoDirectories();
 
     const QStringList missing = findMissingDependencies();
 
-    auto *label = new QLabel(this);
-    label->setAlignment(Qt::AlignCenter);
-    label->setWordWrap(true);
-
-    if (missing.isEmpty()) {
-        label->setText(
-            "<h1>Video Browser</h1>"
-            "<p>Initial application build successful.</p>"
-            "<p>VLC, FFmpeg, and FFprobe were found.</p>"
-        );
-    } else {
+    if (!missing.isEmpty()) {
         QString message =
-            "<h1>Video Browser</h1>"
-            "<p>The application is running, but these dependencies are missing:</p>"
-            "<ul>";
+            "Missing dependencies: " + missing.join(", ") +
+            "\n\nInstall them with:\n"
+            "sudo apt install vlc ffmpeg";
 
-        for (const QString &dependency : missing) {
-            message += "<li>" + dependency.toHtmlEscaped() + "</li>";
-        }
-
-        message +=
-            "</ul>"
-            "<p>Install them with:</p>"
-            "<pre>sudo apt install vlc ffmpeg</pre>";
-
-        label->setText(message);
+        statusBar()->showMessage(message);
+    } else {
+        statusBar()->showMessage(
+            QString("Found %1 video file(s)").arg(videoList->count())
+        );
     }
-
-    setCentralWidget(label);
 }
 
 QStringList MainWindow::findMissingDependencies() const
@@ -67,4 +85,108 @@ QStringList MainWindow::findMissingDependencies() const
     }
 
     return missing;
+}
+
+void MainWindow::loadConfiguration()
+{
+    const QString configDirectory =
+        QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+
+    QDir().mkpath(configDirectory);
+
+    const QString configPath = configDirectory + "/config.json";
+
+    QFile configFile(configPath);
+
+    if (!configFile.exists()) {
+        QJsonObject configObject;
+        QJsonArray directories;
+        directories.append(QDir::homePath() + "/VideoBrowserTest");
+        configObject["video_directories"] = directories;
+
+        if (configFile.open(QIODevice::WriteOnly)) {
+            configFile.write(
+                QJsonDocument(configObject).toJson(QJsonDocument::Indented)
+            );
+            configFile.close();
+        }
+
+        videoDirectories.append(QDir::homePath() + "/VideoBrowserTest");
+        return;
+    }
+
+    if (!configFile.open(QIODevice::ReadOnly)) {
+        videoDirectories.append(QDir::homePath() + "/VideoBrowserTest");
+        return;
+    }
+
+    const QJsonDocument document =
+        QJsonDocument::fromJson(configFile.readAll());
+
+    configFile.close();
+
+    if (!document.isObject()) {
+        videoDirectories.append(QDir::homePath() + "/VideoBrowserTest");
+        return;
+    }
+
+    const QJsonArray directories =
+        document.object()["video_directories"].toArray();
+
+    for (const QJsonValue &value : directories) {
+        if (value.isString()) {
+            QString path = value.toString();
+
+            if (path.startsWith("~/")) {
+                path = QDir::homePath() + path.mid(1);
+            }
+
+            videoDirectories.append(QDir::cleanPath(path));
+        }
+    }
+
+    if (videoDirectories.isEmpty()) {
+        videoDirectories.append(QDir::homePath() + "/VideoBrowserTest");
+    }
+}
+
+void MainWindow::scanVideoDirectories()
+{
+    const QStringList videoExtensions = {
+        "mp4",
+        "mkv",
+        "avi",
+        "mov",
+        "wmv",
+        "webm",
+        "m4v",
+        "mpg",
+        "mpeg",
+        "ts",
+        "m2ts",
+        "flv",
+        "3gp"
+    };
+
+    for (const QString &directory : videoDirectories) {
+        if (!QDir(directory).exists()) {
+            continue;
+        }
+
+        QDirIterator iterator(
+            directory,
+            QDir::Files | QDir::Readable,
+            QDirIterator::Subdirectories
+        );
+
+        while (iterator.hasNext()) {
+            const QString filePath = iterator.next();
+            const QFileInfo fileInfo(filePath);
+
+            if (videoExtensions.contains(
+                    fileInfo.suffix().toLower())) {
+                videoList->addItem(filePath);
+            }
+        }
+    }
 }
