@@ -10,6 +10,7 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QMessageBox>
+#include <QStatusBar>
 #include <QStandardPaths>
 #include <QStringList>
 #include <QVBoxLayout>
