@@ -1,0 +1,51 @@
+name: Build Video Browser
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            qt6-base-dev \
+            ffmpeg \
+            vlc \
+            libvlc-dev
+
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Create package
+        run: |
+          mkdir -p package/video-browser
+          cp build/video-browser package/video-browser/
+          cp README.md package/video-browser/
+          tar -czf video-browser-linux-x86_64.tar.gz -C package video-browser
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-browser-linux-x86_64
+          path: video-browser-linux-x86_64.tar.gz
