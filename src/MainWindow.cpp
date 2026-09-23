@@ -10,6 +10,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QProcess>
@@ -30,6 +31,13 @@ MainWindow::MainWindow(QWidget *parent)
         "QMainWindow { background-color: #202124; color: #eeeeee; }"
         "QWidget { background-color: #202124; color: #eeeeee; }"
         "QLabel { color: #eeeeee; padding: 12px; }"
+        "QLineEdit {"
+        "  background-color: #292a2d;"
+        "  color: #eeeeee;"
+        "  border: 1px solid #444444;"
+        "  padding: 8px;"
+        "  font-size: 14px;"
+        "}"
         "QPushButton {"
         "  background-color: #405d80;"
         "  color: #ffffff;"
@@ -53,6 +61,9 @@ MainWindow::MainWindow(QWidget *parent)
     auto *title = new QLabel("<h1>Video Browser</h1>", centralWidget);
     title->setTextFormat(Qt::RichText);
 
+    searchBox = new QLineEdit(centralWidget);
+    searchBox->setPlaceholderText("Search videos...");
+
     auto *controlsLayout = new QHBoxLayout();
 
     auto *chooseFolderButton =
@@ -69,6 +80,7 @@ MainWindow::MainWindow(QWidget *parent)
     videoList->setAlternatingRowColors(true);
 
     layout->addWidget(title);
+    layout->addWidget(searchBox);
     layout->addLayout(controlsLayout);
     layout->addWidget(videoList);
 
@@ -86,6 +98,13 @@ MainWindow::MainWindow(QWidget *parent)
         &QPushButton::clicked,
         this,
         &MainWindow::refreshVideos
+    );
+
+    connect(
+        searchBox,
+        &QLineEdit::textChanged,
+        this,
+        &MainWindow::filterVideos
     );
 
     connect(
@@ -165,6 +184,7 @@ void MainWindow::loadConfiguration()
         videoDirectories.append(
             QDir::homePath() + "/VideoBrowserTest"
         );
+
         saveConfiguration();
         return;
     }
@@ -173,6 +193,7 @@ void MainWindow::loadConfiguration()
         videoDirectories.append(
             QDir::homePath() + "/VideoBrowserTest"
         );
+
         return;
     }
 
@@ -185,6 +206,7 @@ void MainWindow::loadConfiguration()
         videoDirectories.append(
             QDir::homePath() + "/VideoBrowserTest"
         );
+
         return;
     }
 
@@ -242,6 +264,7 @@ void MainWindow::saveConfiguration() const
                 QJsonDocument::Indented
             )
         );
+
         configFile.close();
     }
 }
@@ -274,8 +297,34 @@ void MainWindow::refreshVideos()
     videoList->clear();
     scanVideoDirectories();
 
+    filterVideos(searchBox->text());
+}
+
+void MainWindow::filterVideos(const QString &text)
+{
+    const QString searchText = text.trimmed();
+    int visibleCount = 0;
+
+    for (int index = 0; index < videoList->count(); ++index) {
+        QListWidgetItem *item = videoList->item(index);
+
+        const bool matches =
+            item->text().contains(
+                searchText,
+                Qt::CaseInsensitive
+            );
+
+        item->setHidden(!matches);
+
+        if (matches) {
+            ++visibleCount;
+        }
+    }
+
     statusBar()->showMessage(
-        QString("Found %1 video file(s)").arg(videoList->count())
+        QString("Showing %1 of %2 video file(s)")
+            .arg(visibleCount)
+            .arg(videoList->count())
     );
 }
 
