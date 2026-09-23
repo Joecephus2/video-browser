@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 
 #include <QDir>
+#include <QStatusBar>
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
