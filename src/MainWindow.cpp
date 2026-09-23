@@ -1,8 +1,6 @@
 #include "MainWindow.h"
 
-#include <QStatusBar>
 #include <QDir>
-#include <QStatusBar>
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
@@ -12,7 +10,9 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QMessageBox>
+#include <QProcess>
 #include <QStandardPaths>
+#include <QStatusBar>
 #include <QStringList>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -53,6 +53,32 @@ MainWindow::MainWindow(QWidget *parent)
 
     loadConfiguration();
     scanVideoDirectories();
+
+    connect(
+        videoList,
+        &QListWidget::itemDoubleClicked,
+        this,
+        [this](QListWidgetItem *item) {
+            if (!item) {
+                return;
+            }
+
+            const QString filePath =
+                item->data(Qt::UserRole).toString();
+
+            if (filePath.isEmpty()) {
+                return;
+            }
+
+            if (!QProcess::startDetached("vlc", {filePath})) {
+                QMessageBox::warning(
+                    this,
+                    "Unable to Play Video",
+                    "Could not start VLC."
+                );
+            }
+        }
+    );
 
     const QStringList missing = findMissingDependencies();
 
@@ -182,15 +208,19 @@ void MainWindow::scanVideoDirectories()
         );
 
         while (iterator.hasNext()) {
-    const QString filePath = iterator.next();
-    const QFileInfo fileInfo(filePath);
+            const QString filePath = iterator.next();
+            const QFileInfo fileInfo(filePath);
 
-    if (videoExtensions.contains(
-            fileInfo.suffix().toLower())) {
-        auto *item = new QListWidgetItem(fileInfo.fileName());
-        item->setData(Qt::UserRole, fileInfo.absoluteFilePath());
+            if (videoExtensions.contains(
+                    fileInfo.suffix().toLower())) {
+                auto *item = new QListWidgetItem(fileInfo.fileName());
 
-        videoList->addItem(item);
+                item->setData(
+                    Qt::UserRole,
+                    fileInfo.absoluteFilePath()
+                );
+
+                videoList->addItem(item);
             }
         }
     }
