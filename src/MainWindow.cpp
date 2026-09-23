@@ -12,7 +12,6 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QMessageBox>
-#include <QStatusBar>
 #include <QStandardPaths>
 #include <QStringList>
 #include <QVBoxLayout>
@@ -183,12 +182,15 @@ void MainWindow::scanVideoDirectories()
         );
 
         while (iterator.hasNext()) {
-            const QString filePath = iterator.next();
-            const QFileInfo fileInfo(filePath);
+    const QString filePath = iterator.next();
+    const QFileInfo fileInfo(filePath);
 
-            if (videoExtensions.contains(
-                    fileInfo.suffix().toLower())) {
-                videoList->addItem(filePath);
+    if (videoExtensions.contains(
+            fileInfo.suffix().toLower())) {
+        auto *item = new QListWidgetItem(fileInfo.fileName());
+        item->setData(Qt::UserRole, fileInfo.absoluteFilePath());
+
+        videoList->addItem(item);
             }
         }
     }
