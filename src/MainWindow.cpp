@@ -1,4 +1,6 @@
 #include "MainWindow.h"
+#include "MainWindow.h"
+#include "ThumbnailGenerator.h"
 
 #include <QDir>
 #include <QDirIterator>
@@ -20,6 +22,8 @@
 #include <QStringList>
 #include <QVBoxLayout>
 #include <QWidget>
+#include "MainWindow.h"
+#include "ThumbnailGenerator.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)

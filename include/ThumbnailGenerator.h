@@ -1,0 +1,3 @@
+include/ThumbnailGenerator.h
+src/ThumbnailGenerator.cpp
+tests/ThumbnailGeneratorTests.cpp
