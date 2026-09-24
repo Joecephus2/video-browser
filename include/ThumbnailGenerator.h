@@ -1,10 +1,11 @@
-#pragma once
+#ifndef THUMBNAILGENERATOR_H
+#define THUMBNAILGENERATOR_H
 
-#include <QProcess>
 #include <QObject>
+#include <QProcess>
 #include <QString>
 
-class ThumbnailGenerator final : public QObject
+class ThumbnailGenerator : public QObject
 {
     Q_OBJECT
 
@@ -13,21 +14,19 @@ public:
 
     void generate(const QString &videoPath,
                   const QString &thumbnailPath,
-                  qint64 timestampMilliseconds = 10000);
+                  qint64 timestampMilliseconds);
 
 signals:
-    void thumbnailReady(const QString &videoPath,
-                        const QString &thumbnailPath);
-
-    void thumbnailFailed(const QString &videoPath,
-                         const QString &errorMessage);
+    void thumbnailReady(const QString &videoPath, const QString &thumbnailPath);
+    void thumbnailFailed(const QString &videoPath, const QString &errorMessage);
 
 private slots:
-    void processFinished(int exitCode,
-                         QProcess::ExitStatus exitStatus);
+    void processFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
-    QProcess *process_ = nullptr;
+    QProcess *process_;
     QString currentVideoPath_;
     QString currentThumbnailPath_;
 };
+
+#endif // THUMBNAILGENERATOR_H

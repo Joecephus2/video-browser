@@ -68,16 +68,28 @@ Retrieve the first source-file compiler error from the GitHub Actions build log.
 
 ## Session checkpoint — 2026-09-23
 
-### Current branch and commit
 
-- Branch: `main`
-- Latest commit: b9d4d288002c2db28fe15355b4efdc46d797f58c
-- Commit message: Add thumbnail generator
-- Working tree clean: YES 
 
-### Current task
+## Session update
 
-Add FFmpeg-based thumbnail generation using a new `ThumbnailGenerator` class.
+### Completed
+- Integrated `ThumbnailGenerator` into `MainWindow`.
+- Aligned `MainWindow.h` with the methods used in `MainWindow.cpp`.
+- Aligned `ThumbnailGenerator.h` with the implementation.
+- Fixed the `QProcess::ExitStatus` include issue.
+- Updated thumbnail generation to use a 10-second timestamp (`10000` ms).
+- Kept video scanning over the full supported extension list.
+- Pushed changes to Git
+- Build was successful 
+- downloaded and tested the arifact
+- I have 3 test videos. Only one has a thumbnail
+
+### In progress / next steps
+- Build the project and fix any remaining compiler or linker errors.
+- Test thumbnail generation end-to-end with sample videos.
+- Verify thumbnail queue behavior and failure handling.
+- Confirm `refreshVideos()` still rescans directories correctly.
+
 
 ### Changes made
 
@@ -104,35 +116,18 @@ Add FFmpeg-based thumbnail generation using a new `ThumbnailGenerator` class.
 - Pushed the changes to the `main` branch.
 - GitHub Actions failed while building the thumbnail-related changes.
 - The exact compiler error still needs to be investigated.
+Added ThumbnailGenerator to MainWindow
+Matched MainWindow.h to the methods implemented in MainWindow.cpp
+Matched ThumbnailGenerator.h to its implementation
+Fixed the QProcess::ExitStatus include issue
+Changed thumbnail generation to use a 10-second timestamp (10000 ms)
+Kept the video scanning extension list intact
+Restored refreshVideos() to call scanVideoDirectories()
+Removed the duplicate/incomplete scanVideoDirectories() block from MainWindow.cpp
+Updated the call from generateThumbnail() to generate()
 
 ### Build status
-- Last known good commit: Unknown 
-- Last attempted commit: 40c4ab588e15df38df0c7a990d8caac9f471fcc2
-- Current version: Not yet assigned
-- GitHub Actions workflow: Add thumbnail generator
-- Last build result: FAIL
-- Last successful commit: `
-- Latest failure: Thumbnail generator compilation failure
-- Full failure log: https://github.com/Joecephus2/video-browser/actions/runs/35938248074
+
 
 
 ### Exact build error
-
-[3/6] Building CXX object CMakeFiles/video-browser.dir/src/ThumbnailGenerator.cpp.o
-FAILED: [code=1] CMakeFiles/video-browser.dir/src/ThumbnailGenerator.cpp.o 
-/usr/bin/c++ -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB -I/home/runner/work/video-browser/video-browser/build/video-browser_autogen/include -I/home/runner/work/video-browser/video-browser/include -isystem /usr/include/x86_64-linux-gnu/qt6/QtWidgets -isystem /usr/include/x86_64-linux-gnu/qt6 -isystem /usr/include/x86_64-linux-gnu/qt6/QtCore -isystem /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -isystem /usr/include/x86_64-linux-gnu/qt6/QtGui -O3 -DNDEBUG -std=c++20 -fPIC -MD -MT CMakeFiles/video-browser.dir/src/ThumbnailGenerator.cpp.o -MF CMakeFiles/video-browser.dir/src/ThumbnailGenerator.cpp.o.d -o CMakeFiles/video-browser.dir/src/ThumbnailGenerator.cpp.o -c /home/runner/work/video-browser/video-browser/src/ThumbnailGenerator.cpp
-In file included from /home/runner/work/video-browser/video-browser/src/ThumbnailGenerator.cpp:1:
-/home/runner/work/video-browser/video-browser/include/ThumbnailGenerator.h:28:26: error: ‘QProcess::ExitStatus’ has not been declared
-   28 |                          QProcess::ExitStatus exitStatus);
-      |                          ^~~~~~~~
-[4/6] Building CXX object CMakeFiles/video-browser.dir/src/main.cpp.o
-[5/6] Building CXX object CMakeFiles/video-browser.dir/src/MainWindow.cpp.o
-FAILED: [code=1] CMakeFiles/video-browser.dir/src/MainWindow.cpp.o 
-/usr/bin/c++ -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB -I/home/runner/work/video-browser/video-browser/build/video-browser_autogen/include -I/home/runner/work/video-browser/video-browser/include -isystem /usr/include/x86_64-linux-gnu/qt6/QtWidgets -isystem /usr/include/x86_64-linux-gnu/qt6 -isystem /usr/include/x86_64-linux-gnu/qt6/QtCore -isystem /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -isystem /usr/include/x86_64-linux-gnu/qt6/QtGui -O3 -DNDEBUG -std=c++20 -fPIC -MD -MT CMakeFiles/video-browser.dir/src/MainWindow.cpp.o -MF CMakeFiles/video-browser.dir/src/MainWindow.cpp.o.d -o CMakeFiles/video-browser.dir/src/MainWindow.cpp.o -c /home/runner/work/video-browser/video-browser/src/MainWindow.cpp
-In file included from /home/runner/work/video-browser/video-browser/src/MainWindow.cpp:3:
-/home/runner/work/video-browser/video-browser/include/ThumbnailGenerator.h:28:26: error: ‘QProcess::ExitStatus’ has not been declared
-   28 |                          QProcess::ExitStatus exitStatus);
-      |                          ^~~~~~~~
-ninja: build stopped: subcommand failed.
-Error: Process completed with exit code 1.
-

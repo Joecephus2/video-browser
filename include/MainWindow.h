@@ -1,45 +1,48 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QHash>
 #include <QMainWindow>
+#include <QHash>
 #include <QQueue>
-#include <QStringList>
+#include <QString>
 
-class QListWidget;
 class QLineEdit;
+class QListWidget;
 class ThumbnailGenerator;
 
-class MainWindow final : public QMainWindow
+class MainWindow : public QMainWindow
 {
+    Q_OBJECT
+
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
-private:
-    QStringList findMissingDependencies() const;
-
-    void loadConfiguration();
-    void saveConfiguration() const;
-    void scanVideoDirectories();
-    void refreshVideos();
+private slots:
     void chooseDirectory();
+    void refreshVideos();
     void filterVideos(const QString &text);
 
-    QString thumbnailPathForVideo(const QString &videoPath) const;
-    void queueThumbnail(const QString &videoPath);
-    void startNextThumbnail();
     void handleThumbnailReady(const QString &videoPath,
                               const QString &thumbnailPath);
     void handleThumbnailFailed(const QString &videoPath,
                                const QString &errorMessage);
 
-    QStringList videoDirectories;
-    QListWidget *videoList = nullptr;
-    QLineEdit *searchBox = nullptr;
-    ThumbnailGenerator *thumbnailGenerator = nullptr;
+private:
+    void loadConfiguration();
+    void saveConfiguration() const;
+    void scanVideoDirectories();
+
+    QString thumbnailPathForVideo(const QString &videoPath) const;
+    void queueThumbnail(const QString &videoPath);
+    void startNextThumbnail();
+
+private:
+    QLineEdit *searchBox;
+    QListWidget *videoList;
+    ThumbnailGenerator *thumbnailGenerator;
 
     QQueue<QString> pendingThumbnailVideos;
     QHash<QString, QString> thumbnailPaths;
 };
 
-#endif
+#endif // MAINWINDOW_H
