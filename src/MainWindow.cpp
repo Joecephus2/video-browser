@@ -1,5 +1,4 @@
 #include "MainWindow.h"
-#include "MainWindow.h"
 #include "ThumbnailGenerator.h"
 
 #include <QDir>
@@ -8,26 +7,35 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QListWidgetItem>
 #include <QMessageBox>
 #include <QProcess>
 #include <QPushButton>
+#include <QSize>
 #include <QStandardPaths>
 #include <QStatusBar>
 #include <QStringList>
 #include <QVBoxLayout>
 #include <QWidget>
-#include "MainWindow.h"
-#include "ThumbnailGenerator.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
+    thumbnailGenerator = new ThumbnailGenerator(this);
+
+    connect(thumbnailGenerator, &ThumbnailGenerator::thumbnailReady,
+            this, &MainWindow::handleThumbnailReady);
+
+    connect(thumbnailGenerator, &ThumbnailGenerator::thumbnailFailed,
+            this, &MainWindow::handleThumbnailFailed);
+
     setWindowTitle("Video Browser");
     resize(1000, 700);
 
@@ -70,18 +78,17 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto *controlsLayout = new QHBoxLayout();
 
-    auto *chooseFolderButton =
-        new QPushButton("Choose Video Folder", centralWidget);
-
-    auto *refreshButton =
-        new QPushButton("Refresh", centralWidget);
+    auto *chooseFolderButton = new QPushButton("Choose Video Folder", centralWidget);
+    auto *refreshButton = new QPushButton("Refresh", centralWidget);
 
     controlsLayout->addWidget(chooseFolderButton);
     controlsLayout->addWidget(refreshButton);
     controlsLayout->addStretch();
 
     videoList = new QListWidget(centralWidget);
-    videoList->setAlternatingRowColors(true);
+    videoList->setAlternatingRowColors(false);
+    videoList->setIconSize(QSize(160, 90));
+    videoList->setSpacing(6);
 
     layout->addWidget(title);
     layout->addWidget(searchBox);
@@ -90,65 +97,44 @@ MainWindow::MainWindow(QWidget *parent)
 
     setCentralWidget(centralWidget);
 
-    connect(
-        chooseFolderButton,
-        &QPushButton::clicked,
-        this,
-        &MainWindow::chooseDirectory
-    );
+    connect(chooseFolderButton, &QPushButton::clicked,
+            this, &MainWindow::chooseDirectory);
 
-    connect(
-        refreshButton,
-        &QPushButton::clicked,
-        this,
-        &MainWindow::refreshVideos
-    );
+    connect(refreshButton, &QPushButton::clicked,
+            this, &MainWindow::refreshVideos);
 
-    connect(
-        searchBox,
-        &QLineEdit::textChanged,
-        this,
-        &MainWindow::filterVideos
-    );
+    connect(searchBox, &QLineEdit::textChanged,
+            this, &MainWindow::filterVideos);
 
-    connect(
-        videoList,
-        &QListWidget::itemDoubleClicked,
-        this,
-        [this](QListWidgetItem *item) {
-            if (!item) {
-                return;
-            }
+    connect(videoList, &QListWidget::itemDoubleClicked,
+            this, [this](QListWidgetItem *item) {
+                if (!item) {
+                    return;
+                }
 
-            const QString filePath =
-                item->data(Qt::UserRole).toString();
+                const QString filePath = item->data(Qt::UserRole).toString();
+                if (filePath.isEmpty()) {
+                    return;
+                }
 
-            if (filePath.isEmpty()) {
-                return;
-            }
-
-            if (!QProcess::startDetached("vlc", {filePath})) {
-                QMessageBox::warning(
-                    this,
-                    "Unable to Play Video",
-                    "Could not start VLC."
-                );
-            }
-        }
-    );
+                if (!QProcess::startDetached("vlc", {filePath})) {
+                    QMessageBox::warning(
+                        this,
+                        "Unable to Play Video",
+                        "Could not start VLC."
+                    );
+                }
+            });
 
     loadConfiguration();
     refreshVideos();
 
     const QStringList missing = findMissingDependencies();
-
     if (!missing.isEmpty()) {
-        const QString message =
+        statusBar()->showMessage(
             "Missing dependencies: " + missing.join(", ") +
-            "\n\nInstall them with:\n"
-            "sudo apt install vlc ffmpeg";
-
-        statusBar()->showMessage(message);
+            " | Install with: sudo apt install vlc ffmpeg"
+        );
     }
 }
 
@@ -174,43 +160,29 @@ QStringList MainWindow::findMissingDependencies() const
 void MainWindow::loadConfiguration()
 {
     const QString configDirectory =
-        QStandardPaths::writableLocation(
-            QStandardPaths::AppConfigLocation
-        );
+        QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
 
     QDir().mkpath(configDirectory);
 
     const QString configPath = configDirectory + "/config.json";
-
     QFile configFile(configPath);
 
     if (!configFile.exists()) {
-        videoDirectories.append(
-            QDir::homePath() + "/VideoBrowserTest"
-        );
-
+        videoDirectories.append(QDir::homePath() + "/VideoBrowserTest");
         saveConfiguration();
         return;
     }
 
     if (!configFile.open(QIODevice::ReadOnly)) {
-        videoDirectories.append(
-            QDir::homePath() + "/VideoBrowserTest"
-        );
-
+        videoDirectories.append(QDir::homePath() + "/VideoBrowserTest");
         return;
     }
 
-    const QJsonDocument document =
-        QJsonDocument::fromJson(configFile.readAll());
-
+    const QJsonDocument document = QJsonDocument::fromJson(configFile.readAll());
     configFile.close();
 
     if (!document.isObject()) {
-        videoDirectories.append(
-            QDir::homePath() + "/VideoBrowserTest"
-        );
-
+        videoDirectories.append(QDir::homePath() + "/VideoBrowserTest");
         return;
     }
 
@@ -218,39 +190,34 @@ void MainWindow::loadConfiguration()
         document.object()["video_directories"].toArray();
 
     for (const QJsonValue &value : directories) {
-        if (value.isString()) {
-            QString path = value.toString();
+        if (!value.isString()) {
+            continue;
+        }
 
-            if (path.startsWith("~/")) {
-                path = QDir::homePath() + path.mid(1);
-            }
+        QString path = value.toString();
+        if (path.startsWith("~/")) {
+            path = QDir::homePath() + path.mid(1);
+        }
 
-            const QString cleanPath = QDir::cleanPath(path);
-
-            if (!videoDirectories.contains(cleanPath)) {
-                videoDirectories.append(cleanPath);
-            }
+        const QString cleanPath = QDir::cleanPath(path);
+        if (!videoDirectories.contains(cleanPath)) {
+            videoDirectories.append(cleanPath);
         }
     }
 
     if (videoDirectories.isEmpty()) {
-        videoDirectories.append(
-            QDir::homePath() + "/VideoBrowserTest"
-        );
+        videoDirectories.append(QDir::homePath() + "/VideoBrowserTest");
     }
 }
 
 void MainWindow::saveConfiguration() const
 {
     const QString configDirectory =
-        QStandardPaths::writableLocation(
-            QStandardPaths::AppConfigLocation
-        );
+        QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
 
     QDir().mkpath(configDirectory);
 
     const QString configPath = configDirectory + "/config.json";
-
     QJsonArray directories;
 
     for (const QString &directory : videoDirectories) {
@@ -261,14 +228,10 @@ void MainWindow::saveConfiguration() const
     configObject["video_directories"] = directories;
 
     QFile configFile(configPath);
-
     if (configFile.open(QIODevice::WriteOnly)) {
         configFile.write(
-            QJsonDocument(configObject).toJson(
-                QJsonDocument::Indented
-            )
+            QJsonDocument(configObject).toJson(QJsonDocument::Indented)
         );
-
         configFile.close();
     }
 }
@@ -299,8 +262,10 @@ void MainWindow::chooseDirectory()
 void MainWindow::refreshVideos()
 {
     videoList->clear();
-    scanVideoDirectories();
+    pendingThumbnailVideos.clear();
+    thumbnailPaths.clear();
 
+    scanVideoDirectories();
     filterVideos(searchBox->text());
 }
 
@@ -313,10 +278,7 @@ void MainWindow::filterVideos(const QString &text)
         QListWidgetItem *item = videoList->item(index);
 
         const bool matches =
-            item->text().contains(
-                searchText,
-                Qt::CaseInsensitive
-            );
+            item->text().contains(searchText, Qt::CaseInsensitive);
 
         item->setHidden(!matches);
 
@@ -335,19 +297,8 @@ void MainWindow::filterVideos(const QString &text)
 void MainWindow::scanVideoDirectories()
 {
     const QStringList videoExtensions = {
-        "mp4",
-        "mkv",
-        "avi",
-        "mov",
-        "wmv",
-        "webm",
-        "m4v",
-        "mpg",
-        "mpeg",
-        "ts",
-        "m2ts",
-        "flv",
-        "3gp"
+        "mp4", "mkv", "avi", "mov", "wmv", "webm",
+        "m4v", "mpg", "mpeg", "ts", "m2ts", "flv", "3gp"
     };
 
     for (const QString &directory : videoDirectories) {
@@ -365,18 +316,89 @@ void MainWindow::scanVideoDirectories()
             const QString filePath = iterator.next();
             const QFileInfo fileInfo(filePath);
 
-            if (videoExtensions.contains(
-                    fileInfo.suffix().toLower())) {
-                auto *item =
-                    new QListWidgetItem(fileInfo.fileName());
-
-                item->setData(
-                    Qt::UserRole,
-                    fileInfo.absoluteFilePath()
-                );
-
-                videoList->addItem(item);
+            if (!videoExtensions.contains(fileInfo.suffix().toLower())) {
+                continue;
             }
+
+            auto *item = new QListWidgetItem(fileInfo.fileName());
+            item->setData(Qt::UserRole, fileInfo.absoluteFilePath());
+            videoList->addItem(item);
+
+            queueThumbnail(fileInfo.absoluteFilePath());
         }
     }
+
+    startNextThumbnail();
+}
+
+QString MainWindow::thumbnailPathForVideo(const QString &videoPath) const
+{
+    const QString thumbnailDirectory =
+        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
+        "/thumbnails";
+
+    QDir().mkpath(thumbnailDirectory);
+
+    const QString fileName = QString::number(qHash(videoPath)) + ".jpg";
+    return thumbnailDirectory + "/" + fileName;
+}
+
+void MainWindow::queueThumbnail(const QString &videoPath)
+{
+    const QString thumbnailPath = thumbnailPathForVideo(videoPath);
+    thumbnailPaths.insert(videoPath, thumbnailPath);
+
+    if (QFile::exists(thumbnailPath)) {
+        handleThumbnailReady(videoPath, thumbnailPath);
+        return;
+    }
+
+    if (!pendingThumbnailVideos.contains(videoPath)) {
+        pendingThumbnailVideos.enqueue(videoPath);
+    }
+}
+
+void MainWindow::startNextThumbnail()
+{
+    if (pendingThumbnailVideos.isEmpty()) {
+        return;
+    }
+
+    const QString videoPath = pendingThumbnailVideos.dequeue();
+    const QString thumbnailPath = thumbnailPaths.value(videoPath);
+
+    if (thumbnailPath.isEmpty()) {
+        handleThumbnailFailed(videoPath, "Missing thumbnail path.");
+        return;
+    }
+
+    thumbnailGenerator->generate(videoPath, thumbnailPath, 10000);
+}
+
+void MainWindow::handleThumbnailReady(
+    const QString &videoPath,
+    const QString &thumbnailPath)
+{
+    for (int index = 0; index < videoList->count(); ++index) {
+        QListWidgetItem *item = videoList->item(index);
+
+        if (item->data(Qt::UserRole).toString() != videoPath) {
+            continue;
+        }
+
+        item->setIcon(QIcon(thumbnailPath));
+        break;
+    }
+
+    startNextThumbnail();
+}
+
+void MainWindow::handleThumbnailFailed(
+    const QString &videoPath,
+    const QString &errorMessage)
+{
+    Q_UNUSED(videoPath);
+    Q_UNUSED(errorMessage);
+
+    startNextThumbnail();
 }
