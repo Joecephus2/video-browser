@@ -29,7 +29,7 @@ Native Qt 6 Linux desktop app for browsing and managing video files on Lubuntu/L
 - [x] Search/filter
 - [x] VLC double-click playback
 - [ ] JSON media database
-- [ ] Thumbnail generation
+- [ ] Thumbnail generation integrated into the UI
 - [ ] Duration extraction
 - [ ] File-size overlay
 - [ ] Hover preview
@@ -42,6 +42,10 @@ Native Qt 6 Linux desktop app for browsing and managing video files on Lubuntu/L
 ## Current task
 
 Enable Thumbnail generation
+
+### Next action
+
+Retrieve the first source-file compiler error from the GitHub Actions build log. Then fix the thumbnail-generator compilation error before adding further features.
 
 
 ## Decisions
@@ -110,17 +114,17 @@ Add FFmpeg-based thumbnail generation using a new `ThumbnailGenerator` class.
 
 ### Exact build error
 
-/usr/include/c++/13/format:2093:22:   required from ‘typename std::basic_format_context<_Out, _CharT>::iterator std::formatter<_Tp, _CharT>::format(_Tp, std::basic_format_context<_Out, _CharT>&) const [with _Out = std::__format::_Sink_iter<char>; _Tp = float; _CharT = char; typename std::basic_format_context<_Out, _CharT>::iterator = std::basic_format_context<std::__format::_Sink_iter<char>, char>::iterator]’
-/usr/include/c++/13/format:3659:41:   required from ‘std::__format::_Formatting_scanner<std::__format::_Sink_iter<char>, char>::_M_format_arg(size_t)::<lambda(auto:50&)> [with auto:50 = float]’
-/usr/include/c++/13/format:3145:44:   required from ‘decltype(auto) std::basic_format_arg<_Context>::_M_visit(_Visitor&&, std::__format::_Arg_t) [with _Visitor = std::__format::_Formatting_scanner<std::__format::_Sink_iter<char>, char>::_M_format_arg(size_t)::<lambda(auto:50&)>; _Context = std::basic_format_context<std::__format::_Sink_iter<char>, char>]’
-/usr/include/c++/13/format:3192:28:   required from ‘decltype(auto) std::visit_format_arg(_Visitor&&, basic_format_arg<_Context>) [with _Visitor = __format::_Formatting_scanner<__format::_Sink_iter<char>, char>::_M_format_arg(size_t)::<lambda(auto:50&)>; _Context = basic_format_context<__format::_Sink_iter<char>, char>]’
-/usr/include/c++/13/format:3648:23:   required from ‘constexpr void std::__format::_Formatting_scanner<_Out, _CharT>::_M_format_arg(size_t) [with _Out = std::__format::_Sink_iter<char>; _CharT = char; size_t = long unsigned int]’
-/usr/include/c++/13/format:3643:7:   required from here
-/usr/include/c++/13/format:1772:17: error: ‘class std::__cxx11::basic_string<char>’ has no member named ‘resize’
- 1772 |           __str.resize(__n);
-      |           ~~~~~~^~~~~~
-/usr/include/c++/13/format:1773:17: error: ‘class std::__cxx11::basic_string<char>’ has no member named ‘resize’
- 1773 |           __str.resize(__f(__str.data(), __n));
-      |           ~~~~~~^~~~~~
-ninja: build stopped: subcommand failed.
-Error: Process completed with exit code 1.
+Run cmake --build build --parallel
+[1/6] Automatic MOC and UIC for target video-browser
+[2/6] Building CXX object CMakeFiles/video-browser.dir/video-browser_autogen/mocs_compilation.cpp.o
+[3/6] Building CXX object CMakeFiles/video-browser.dir/src/main.cpp.o
+[4/6] Building CXX object CMakeFiles/video-browser.dir/src/MainWindow.cpp.o
+FAILED: [code=1] CMakeFiles/video-browser.dir/src/MainWindow.cpp.o 
+/usr/bin/c++ -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB -I/home/runner/work/video-browser/video-browser/build/video-browser_autogen/include -I/home/runner/work/video-browser/video-browser/include -isystem /usr/include/x86_64-linux-gnu/qt6/QtWidgets -isystem /usr/include/x86_64-linux-gnu/qt6 -isystem /usr/include/x86_64-linux-gnu/qt6/QtCore -isystem /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -isystem /usr/include/x86_64-linux-gnu/qt6/QtGui -O3 -DNDEBUG -std=c++20 -fPIC -MD -MT CMakeFiles/video-browser.dir/src/MainWindow.cpp.o -MF CMakeFiles/video-browser.dir/src/MainWindow.cpp.o.d -o CMakeFiles/video-browser.dir/src/MainWindow.cpp.o -c /home/runner/work/video-browser/video-browser/src/MainWindow.cpp
+In file included from /home/runner/work/video-browser/video-browser/src/MainWindow.cpp:3:
+/home/runner/work/video-browser/video-browser/include/ThumbnailGenerator.h:1:1: error: ‘include’ does not name a type
+    1 | include/ThumbnailGenerator.h
+      | ^~~~~~~
+In file included from /home/runner/work/video-browser/video-browser/src/MainWindow.cpp:26:
+/home/runner/work/video-browser/video-browser/include/ThumbnailGenerator.h:1:1: error: ‘include’ does not name a type
+    1 | include/ThumbnailGenerator.h
