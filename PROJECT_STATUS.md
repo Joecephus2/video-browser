@@ -66,65 +66,36 @@ Retrieve the first source-file compiler error from the GitHub Actions build log.
     Artifact links may not expose compiler logs directly.
     Do not add a second CI workflow unless the existing one is unusable.
 
-## Session checkpoint — 2026-09-23
-
-
-
-## Session update
+## Project Status
 
 ### Completed
-- Integrated `ThumbnailGenerator` into `MainWindow`.
-- Aligned `MainWindow.h` with the methods used in `MainWindow.cpp`.
-- Aligned `ThumbnailGenerator.h` with the implementation.
+- Project builds successfully locally.
+- App launches and runs locally.
+- Thumbnail generation is implemented using `ffmpeg`.
+- Thumbnail filenames now use SHA1 hashes of video paths to avoid collisions.
+- Thumbnail output directories are created automatically before generating thumbnails.
+- Thumbnail queue advances reliably after success or failure.
+- Full video paths are stored in each list item for thumbnail matching.
+- Video list is set to `QListView::ListMode`.
+- Video scanning now searches `QDir::homePath()` recursively for common video formats.
+
+### Fixed Recently
 - Fixed the `QProcess::ExitStatus` include issue.
-- Updated thumbnail generation to use a 10-second timestamp (`10000` ms).
-- Kept video scanning over the full supported extension list.
-- Pushed changes to Git
-- Build was successful 
-- downloaded and tested the arifact
-- I have 3 test videos. Only one has a thumbnail
+- Replaced `generateThumbnail()` calls with `thumbnailGenerator->generate()`.
+- Removed the duplicate/incomplete `scanVideoDirectories()` block.
+- Restored directory scanning in `refreshVideos()`.
 
-### In progress / next steps
-- Build the project and fix any remaining compiler or linker errors.
-- Test thumbnail generation end-to-end with sample videos.
-- Verify thumbnail queue behavior and failure handling.
-- Confirm `refreshVideos()` still rescans directories correctly.
+### Current Issue
+- Only 1 thumbnail is visible out of 3 test videos.
+- Git-based compile failed.
+- Work is paused for now.
 
-
-### Changes made
-
-- Added `PROJECT_STATUS.md` to track the project state, completed features, build status, current task, and next actions.
-- Confirmed that the current `main` branch builds successfully before the latest thumbnail changes.
-- Began the thumbnail-generation implementation.
-- Added or prepared a `ThumbnailGenerator` component for FFmpeg-based thumbnail extraction.
-- Added project-header includes using quotes, such as:
-  `#include "ThumbnailGenerator.h"`
-- Added Qt/library includes using angle brackets, such as:
-  `#include <QProcess>`
-- Added or updated thumbnail-related source files:
-  - `include/ThumbnailGenerator.h`
-  - `src/ThumbnailGenerator.cpp`
-- Added or updated thumbnail-related test files:
-  - `tests/ThumbnailGeneratorTests.cpp`
-- Updated `CMakeLists.txt` to include the new thumbnail source and test files.
-- Intended thumbnail behavior:
-  - Extract a frame at approximately 10 seconds.
-  - Use an earlier frame for videos shorter than 10 seconds.
-  - Use FFmpeg through Qt's `QProcess`.
-  - Avoid blocking the application interface.
-  - Cache generated thumbnails for later reuse.
-- Pushed the changes to the `main` branch.
-- GitHub Actions failed while building the thumbnail-related changes.
-- The exact compiler error still needs to be investigated.
-Added ThumbnailGenerator to MainWindow
-Matched MainWindow.h to the methods implemented in MainWindow.cpp
-Matched ThumbnailGenerator.h to its implementation
-Fixed the QProcess::ExitStatus include issue
-Changed thumbnail generation to use a 10-second timestamp (10000 ms)
-Kept the video scanning extension list intact
-Restored refreshVideos() to call scanVideoDirectories()
-Removed the duplicate/incomplete scanVideoDirectories() block from MainWindow.cpp
-Updated the call from generateThumbnail() to generate()
+### Possible Causes Under Review
+- Thumbnail assignment to list items.
+- UI refresh after thumbnail generation.
+- Queue processing for all videos.
+- Thumbnail path uniqueness and file creation success.
+- Build/configuration differences in the Git environment.
 
 ### Build status
 
