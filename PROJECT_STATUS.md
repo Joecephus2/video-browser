@@ -106,25 +106,33 @@ Add FFmpeg-based thumbnail generation using a new `ThumbnailGenerator` class.
 - The exact compiler error still needs to be investigated.
 
 ### Build status
+- Last known good commit: Unknown 
+- Last attempted commit: 40c4ab588e15df38df0c7a990d8caac9f471fcc2
+- Current version: Not yet assigned
+- GitHub Actions workflow: Add thumbnail generator
+- Last build result: FAIL
+- Last successful commit: `
+- Latest failure: Thumbnail generator compilation failure
+- Full failure log: https://github.com/Joecephus2/video-browser/actions/runs/35938248074
 
-- GitHub Actions result: FAIL
-- Workflow run: https://github.com/Joecephus2/video-browser/actions/runs/35934499543
-- Failed job: Add thumbnail generator
-- Failed step: build
 
 ### Exact build error
 
-Run cmake --build build --parallel
-[1/6] Automatic MOC and UIC for target video-browser
-[2/6] Building CXX object CMakeFiles/video-browser.dir/video-browser_autogen/mocs_compilation.cpp.o
-[3/6] Building CXX object CMakeFiles/video-browser.dir/src/main.cpp.o
-[4/6] Building CXX object CMakeFiles/video-browser.dir/src/MainWindow.cpp.o
+[3/6] Building CXX object CMakeFiles/video-browser.dir/src/ThumbnailGenerator.cpp.o
+FAILED: [code=1] CMakeFiles/video-browser.dir/src/ThumbnailGenerator.cpp.o 
+/usr/bin/c++ -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB -I/home/runner/work/video-browser/video-browser/build/video-browser_autogen/include -I/home/runner/work/video-browser/video-browser/include -isystem /usr/include/x86_64-linux-gnu/qt6/QtWidgets -isystem /usr/include/x86_64-linux-gnu/qt6 -isystem /usr/include/x86_64-linux-gnu/qt6/QtCore -isystem /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -isystem /usr/include/x86_64-linux-gnu/qt6/QtGui -O3 -DNDEBUG -std=c++20 -fPIC -MD -MT CMakeFiles/video-browser.dir/src/ThumbnailGenerator.cpp.o -MF CMakeFiles/video-browser.dir/src/ThumbnailGenerator.cpp.o.d -o CMakeFiles/video-browser.dir/src/ThumbnailGenerator.cpp.o -c /home/runner/work/video-browser/video-browser/src/ThumbnailGenerator.cpp
+In file included from /home/runner/work/video-browser/video-browser/src/ThumbnailGenerator.cpp:1:
+/home/runner/work/video-browser/video-browser/include/ThumbnailGenerator.h:28:26: error: ‘QProcess::ExitStatus’ has not been declared
+   28 |                          QProcess::ExitStatus exitStatus);
+      |                          ^~~~~~~~
+[4/6] Building CXX object CMakeFiles/video-browser.dir/src/main.cpp.o
+[5/6] Building CXX object CMakeFiles/video-browser.dir/src/MainWindow.cpp.o
 FAILED: [code=1] CMakeFiles/video-browser.dir/src/MainWindow.cpp.o 
 /usr/bin/c++ -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB -I/home/runner/work/video-browser/video-browser/build/video-browser_autogen/include -I/home/runner/work/video-browser/video-browser/include -isystem /usr/include/x86_64-linux-gnu/qt6/QtWidgets -isystem /usr/include/x86_64-linux-gnu/qt6 -isystem /usr/include/x86_64-linux-gnu/qt6/QtCore -isystem /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -isystem /usr/include/x86_64-linux-gnu/qt6/QtGui -O3 -DNDEBUG -std=c++20 -fPIC -MD -MT CMakeFiles/video-browser.dir/src/MainWindow.cpp.o -MF CMakeFiles/video-browser.dir/src/MainWindow.cpp.o.d -o CMakeFiles/video-browser.dir/src/MainWindow.cpp.o -c /home/runner/work/video-browser/video-browser/src/MainWindow.cpp
 In file included from /home/runner/work/video-browser/video-browser/src/MainWindow.cpp:3:
-/home/runner/work/video-browser/video-browser/include/ThumbnailGenerator.h:1:1: error: ‘include’ does not name a type
-    1 | include/ThumbnailGenerator.h
-      | ^~~~~~~
-In file included from /home/runner/work/video-browser/video-browser/src/MainWindow.cpp:26:
-/home/runner/work/video-browser/video-browser/include/ThumbnailGenerator.h:1:1: error: ‘include’ does not name a type
-    1 | include/ThumbnailGenerator.h
+/home/runner/work/video-browser/video-browser/include/ThumbnailGenerator.h:28:26: error: ‘QProcess::ExitStatus’ has not been declared
+   28 |                          QProcess::ExitStatus exitStatus);
+      |                          ^~~~~~~~
+ninja: build stopped: subcommand failed.
+Error: Process completed with exit code 1.
+

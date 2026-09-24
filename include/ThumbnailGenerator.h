@@ -1,9 +1,8 @@
 #pragma once
 
+#include <QProcess>
 #include <QObject>
 #include <QString>
-
-class QProcess;
 
 class ThumbnailGenerator final : public QObject
 {
