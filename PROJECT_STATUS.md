@@ -98,7 +98,19 @@ Retrieve the first source-file compiler error from the GitHub Actions build log.
 - Build/configuration differences in the Git environment.
 
 ### Build status
-
+latest build https://github.com/Joecephus2/video-browser/actions/runs/36042960723/job/107779386358 failed
 
 
 ### Exact build error
+
+/usr/include/x86_64-linux-gnu/qt6/QtCore/qdiriterator.h:25:5: note:   candidate expects 3 arguments, 4 provided
+/usr/include/x86_64-linux-gnu/qt6/QtCore/qdiriterator.h:23:5: note: candidate: ‘QDirIterator::QDirIterator(const QString&, IteratorFlags)’
+   23 |     QDirIterator(const QString &path,
+      |     ^~~~~~~~~~~~
+/usr/include/x86_64-linux-gnu/qt6/QtCore/qdiriterator.h:23:5: note:   candidate expects 2 arguments, 4 provided
+/usr/include/x86_64-linux-gnu/qt6/QtCore/qdiriterator.h:22:5: note: candidate: ‘QDirIterator::QDirIterator(const QDir&, IteratorFlags)’
+   22 |     QDirIterator(const QDir &dir, IteratorFlags flags = NoIteratorFlags);
+      |     ^~~~~~~~~~~~
+/usr/include/x86_64-linux-gnu/qt6/QtCore/qdiriterator.h:22:5: note:   candidate expects 2 arguments, 4 provided
+ninja: build stopped: subcommand failed.
+Error: Process completed with exit code 1.
