@@ -5,6 +5,7 @@
 #include <QHash>
 #include <QQueue>
 #include <QString>
+#include <QSettings>
 
 class QLineEdit;
 class QListWidget;
@@ -30,6 +31,7 @@ private slots:
 private:
     void loadConfiguration();
     void saveConfiguration() const;
+    void promptForScanFolder();
     void scanVideoDirectories();
 
     QString thumbnailPathForVideo(const QString &videoPath) const;
@@ -41,8 +43,11 @@ private:
     QListWidget *videoList;
     ThumbnailGenerator *thumbnailGenerator;
 
+    QString scanRootPath;
+
     QQueue<QString> pendingThumbnailVideos;
     QHash<QString, QString> thumbnailPaths;
 };
 
 #endif // MAINWINDOW_H
+
