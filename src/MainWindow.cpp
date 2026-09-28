@@ -102,14 +102,7 @@ void MainWindow::scanVideoDirectories()
         "*.m2ts", "*.flv", "*.3gp"
     };
 
-    const QStringList searchDirs = {
-        QDir::homePath()
-    };
-
-    QDirIterator it(searchDirs,
-                    videoExtensions,
-                    QDir::Files,
-                    QDirIterator::Subdirectories);
+    QDirIterator it(QDir::homePath(), videoExtensions, QDir::Files, QDirIterator::Subdirectories);
 
     while (it.hasNext()) {
         const QString videoPath = it.next();
