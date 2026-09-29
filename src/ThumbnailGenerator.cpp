@@ -1,39 +1,37 @@
 #include "ThumbnailGenerator.h"
 
-#include <QFileInfo>
 #include <QProcess>
 
 ThumbnailGenerator::ThumbnailGenerator(QObject *parent)
-    : QObject(parent),
-      process_(new QProcess(this))
+    : QObject(parent)
 {
-    connect(process_, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, &ThumbnailGenerator::processFinished);
 }
 
-void ThumbnailGenerator::generate(const QString &videoPath,
-                                  const QString &thumbnailPath,
-                                  qint64 timestampMilliseconds)
+void ThumbnailGenerator::generate(const QString &videoPath, const QString &thumbnailPath, qint64 timestampMilliseconds)
 {
-    currentVideoPath_ = videoPath;
-    currentThumbnailPath_ = thumbnailPath;
+    auto *process = new QProcess(this);
 
-    QStringList args;
-    args << "-y";
-    args << "-ss" << QString::number(timestampMilliseconds / 1000.0, 'f', 3);
-    args << "-i" << videoPath;
-    args << "-frames:v" << "1";
-    args << "-q:v" << "2";
-    args << thumbnailPath;
+    connect(process, &QProcess::finished, this, [this, process, videoPath, thumbnailPath](int exitCode, QProcess::ExitStatus exitStatus) {
+        if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+            emit thumbnailReady(videoPath, thumbnailPath);
+        } else {
+            emit thumbnailFailed(videoPath, process->errorString());
+        }
+        process->deleteLater();
+    });
 
-    process_->start("ffmpeg", args);
-}
+    connect(process, &QProcess::errorOccurred, this, [this, process, videoPath](QProcess::ProcessError) {
+        emit thumbnailFailed(videoPath, process->errorString());
+    });
 
-void ThumbnailGenerator::processFinished(int exitCode, QProcess::ExitStatus exitStatus)
-{
-    if (exitStatus == QProcess::NormalExit && exitCode == 0) {
-        emit thumbnailReady(currentVideoPath_, currentThumbnailPath_);
-    } else {
-        emit thumbnailFailed(currentVideoPath_, "ffmpeg failed");
-    }
+    process->setProgram("ffmpeg");
+    process->setArguments({
+        "-y",
+        "-ss", QString::number(timestampMilliseconds / 1000.0),
+        "-i", videoPath,
+        "-frames:v", "1",
+        "-q:v", "2",
+        thumbnailPath
+    });
+    process->start();
 }

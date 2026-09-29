@@ -2,8 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QQueue>
 #include <QHash>
+#include <QQueue>
 
 class QLineEdit;
 class QTreeWidget;
@@ -29,7 +29,6 @@ private:
     void loadConfiguration();
     void saveConfiguration() const;
     void promptForScanFolder();
-    void scanVideoDirectories();
     void addFolderItems(QTreeWidgetItem *parentItem, const QString &folderPath);
     QString thumbnailPathForVideo(const QString &videoPath) const;
     void queueThumbnail(const QString &videoPath);
