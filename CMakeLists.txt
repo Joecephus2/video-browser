@@ -15,6 +15,8 @@ qt_add_executable(video-browser
     src/main.cpp
     src/MainWindow.cpp
     src/ThumbnailGenerator.cpp
+    include/MainWindow.h
+    include/ThumbnailGenerator.h
 )
 
 target_include_directories(video-browser PRIVATE include)

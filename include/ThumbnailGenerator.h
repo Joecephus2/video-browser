@@ -10,7 +10,9 @@ class ThumbnailGenerator : public QObject
 
 public:
     explicit ThumbnailGenerator(QObject *parent = nullptr);
-    void generate(const QString &videoPath, const QString &thumbnailPath, qint64 timestampMilliseconds);
+    void generate(const QString &videoPath,
+                  const QString &thumbnailPath,
+                  qint64 timestampMilliseconds);
 
 signals:
     void thumbnailReady(const QString &videoPath, const QString &thumbnailPath);
