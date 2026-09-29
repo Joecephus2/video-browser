@@ -68,49 +68,27 @@ Retrieve the first source-file compiler error from the GitHub Actions build log.
 
 ## Project Status
 
-### Completed
-- Project builds successfully locally.
-- App launches and runs locally.
-- Thumbnail generation is implemented using `ffmpeg`.
-- Thumbnail filenames now use SHA1 hashes of video paths to avoid collisions.
-- Thumbnail output directories are created automatically before generating thumbnails.
-- Thumbnail queue advances reliably after success or failure.
-- Full video paths are stored in each list item for thumbnail matching.
-- Video list is set to `QListView::ListMode`.
-- Video scanning now searches `QDir::homePath()` recursively for common video formats.
+# Project Status
 
-### Fixed Recently
-- Fixed the `QProcess::ExitStatus` include issue.
-- Replaced `generateThumbnail()` calls with `thumbnailGenerator->generate()`.
-- Removed the duplicate/incomplete `scanVideoDirectories()` block.
-- Restored directory scanning in `refreshVideos()`.
+## Completed
+- Qt 6 project builds successfully
+- `QDirIterator` issue fixed
+- Main window compiles and launches
+- Video scan root is now configurable
+- App prompts for a scan folder on first run if none is saved
+- Scan location is stored with `QSettings`
+- Thumbnail generation system is wired into the UI
 
-### Current Issue
-- Only 1 thumbnail is visible out of 3 test videos.
-- Git-based compile failed.
-- Work is paused for now.
+## Current Behavior
+- App loads saved scan directory if available
+- If no scan directory is configured, app prompts the user to choose one
+- Videos are scanned recursively from the chosen folder
+- Thumbnails are queued and generated one at a time
 
-### Possible Causes Under Review
-- Thumbnail assignment to list items.
-- UI refresh after thumbnail generation.
-- Queue processing for all videos.
-- Thumbnail path uniqueness and file creation success.
-- Build/configuration differences in the Git environment.
+## Files Updated
+- `include/MainWindow.h`
+- `src/MainWindow.cpp`
+- `src/main.cpp`
 
-### Build status
-latest build https://github.com/Joecephus2/video-browser/actions/runs/36042960723/job/107779386358 failed
-
-
-### Exact build error
-
-/usr/include/x86_64-linux-gnu/qt6/QtCore/qdiriterator.h:25:5: note:   candidate expects 3 arguments, 4 provided
-/usr/include/x86_64-linux-gnu/qt6/QtCore/qdiriterator.h:23:5: note: candidate: ‘QDirIterator::QDirIterator(const QString&, IteratorFlags)’
-   23 |     QDirIterator(const QString &path,
-      |     ^~~~~~~~~~~~
-/usr/include/x86_64-linux-gnu/qt6/QtCore/qdiriterator.h:23:5: note:   candidate expects 2 arguments, 4 provided
-/usr/include/x86_64-linux-gnu/qt6/QtCore/qdiriterator.h:22:5: note: candidate: ‘QDirIterator::QDirIterator(const QDir&, IteratorFlags)’
-   22 |     QDirIterator(const QDir &dir, IteratorFlags flags = NoIteratorFlags);
-      |     ^~~~~~~~~~~~
-/usr/include/x86_64-linux-gnu/qt6/QtCore/qdiriterator.h:22:5: note:   candidate expects 2 arguments, 4 provided
-ninja: build stopped: subcommand failed.
-Error: Process completed with exit code 1.
+## Next Issue to Check
+- Why only 1 of 3 thumbnails appears after the build passes
