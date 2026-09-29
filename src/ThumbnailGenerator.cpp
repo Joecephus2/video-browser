@@ -1,7 +1,7 @@
 #include "ThumbnailGenerator.h"
 
-#include <QDir>
 #include <QFileInfo>
+#include <QProcess>
 
 ThumbnailGenerator::ThumbnailGenerator(QObject *parent)
     : QObject(parent),
@@ -18,19 +18,15 @@ void ThumbnailGenerator::generate(const QString &videoPath,
     currentVideoPath_ = videoPath;
     currentThumbnailPath_ = thumbnailPath;
 
-    QDir().mkpath(QFileInfo(thumbnailPath).absolutePath());
+    QStringList args;
+    args << "-y";
+    args << "-ss" << QString::number(timestampMilliseconds / 1000.0, 'f', 3);
+    args << "-i" << videoPath;
+    args << "-frames:v" << "1";
+    args << "-q:v" << "2";
+    args << thumbnailPath;
 
-    const QString timestampSeconds =
-        QString::number(timestampMilliseconds / 1000.0, 'f', 3);
-
-    process_->start("ffmpeg", {
-        "-y",
-        "-ss", timestampSeconds,
-        "-i", videoPath,
-        "-frames:v", "1",
-        "-q:v", "2",
-        thumbnailPath
-    });
+    process_->start("ffmpeg", args);
 }
 
 void ThumbnailGenerator::processFinished(int exitCode, QProcess::ExitStatus exitStatus)
@@ -38,6 +34,6 @@ void ThumbnailGenerator::processFinished(int exitCode, QProcess::ExitStatus exit
     if (exitStatus == QProcess::NormalExit && exitCode == 0) {
         emit thumbnailReady(currentVideoPath_, currentThumbnailPath_);
     } else {
-        emit thumbnailFailed(currentVideoPath_, process_->readAllStandardError());
+        emit thumbnailFailed(currentVideoPath_, "ffmpeg failed");
     }
 }

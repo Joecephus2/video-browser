@@ -1,114 +1,130 @@
 #include "MainWindow.h"
 #include "ThumbnailGenerator.h"
 
-#include <QCryptographicHash>
+#include <QDesktopServices>
 #include <QDir>
-#include <QDirIterator>
 #include <QFileDialog>
 #include <QFileInfo>
-#include <QIcon>
+#include <QHBoxLayout>
 #include <QLineEdit>
-#include <QListWidget>
-#include <QListWidgetItem>
-#include <QListView>
+#include <QPushButton>
 #include <QSettings>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
+#include <QTreeWidgetItemIterator>
+#include <QUrl>
 #include <QVBoxLayout>
-#include <QWidget>
-#include <QDebug>
+#include <QIcon>
+
+static const QStringList videoExtensions = {
+    "*.mp4", "*.mkv", "*.avi", "*.mov", "*.webm", "*.flv"
+};
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
       searchBox(new QLineEdit(this)),
-      videoList(new QListWidget(this)),
+      videoList(new QTreeWidget(this)),
       thumbnailGenerator(new ThumbnailGenerator(this))
 {
-    auto *central = new QWidget(this);
-    auto *layout = new QVBoxLayout(central);
+    QWidget *central = new QWidget(this);
+    QVBoxLayout *mainLayout = new QVBoxLayout(central);
 
-    layout->addWidget(searchBox);
-    layout->addWidget(videoList);
+    QHBoxLayout *topLayout = new QHBoxLayout();
+    QPushButton *chooseButton = new QPushButton("Choose Folder", this);
+    QPushButton *refreshButton = new QPushButton("Refresh", this);
+
+    topLayout->addWidget(searchBox);
+    topLayout->addWidget(chooseButton);
+    topLayout->addWidget(refreshButton);
+
+    videoList->setColumnCount(2);
+    videoList->setHeaderLabels({ "Name", "Type" });
+    videoList->setSelectionMode(QAbstractItemView::SingleSelection);
+    videoList->setExpandsOnDoubleClick(true);
+
+    mainLayout->addLayout(topLayout);
+    mainLayout->addWidget(videoList);
     setCentralWidget(central);
 
-    videoList->setViewMode(QListView::ListMode);
-
+    connect(chooseButton, &QPushButton::clicked,
+            this, &MainWindow::chooseDirectory);
+    connect(refreshButton, &QPushButton::clicked,
+            this, &MainWindow::refreshVideos);
     connect(searchBox, &QLineEdit::textChanged,
             this, &MainWindow::filterVideos);
+    connect(videoList, &QTreeWidget::itemDoubleClicked,
+            this, &MainWindow::handleItemDoubleClicked);
 
     connect(thumbnailGenerator, &ThumbnailGenerator::thumbnailReady,
             this, &MainWindow::handleThumbnailReady);
-
     connect(thumbnailGenerator, &ThumbnailGenerator::thumbnailFailed,
             this, &MainWindow::handleThumbnailFailed);
 
     loadConfiguration();
+    if (scanRootPath.isEmpty()) {
+        promptForScanFolder();
+    }
     refreshVideos();
 }
 
 void MainWindow::chooseDirectory()
 {
-    const QString dir = QFileDialog::getExistingDirectory(
-        this,
-        tr("Choose video folder"),
-        QDir::homePath()
-    );
-
-    if (dir.isEmpty()) {
-        return;
-    }
-
-    scanRootPath = dir;
-    saveConfiguration();
+    promptForScanFolder();
+    refreshVideos();
 }
 
 void MainWindow::refreshVideos()
 {
     videoList->clear();
-    pendingThumbnailVideos.clear();
-    thumbnailPaths.clear();
+
+    if (scanRootPath.isEmpty()) {
+        return;
+    }
+
     scanVideoDirectories();
+    videoList->expandAll();
 }
 
 void MainWindow::filterVideos(const QString &text)
 {
-    for (int i = 0; i < videoList->count(); ++i) {
-        QListWidgetItem *item = videoList->item(i);
-        item->setHidden(!item->text().contains(text, Qt::CaseInsensitive));
-    }
-}
+    const QString filter = text.trimmed().toLower();
 
-void MainWindow::handleThumbnailReady(const QString &videoPath,
-                                      const QString &thumbnailPath)
-{
-    pendingThumbnailVideos.removeOne(videoPath);
+    QTreeWidgetItemIterator it(videoList);
+    while (*it) {
+        QTreeWidgetItem *item = *it;
+        bool visible = true;
 
-    for (int i = 0; i < videoList->count(); ++i) {
-        QListWidgetItem *item = videoList->item(i);
-        if (item->data(Qt::UserRole).toString() == videoPath) {
-            item->setIcon(QIcon(thumbnailPath));
-            break;
+        if (!filter.isEmpty()) {
+            const QString name = item->text(0).toLower();
+            const QString path = item->data(0, Qt::UserRole).toString().toLower();
+            visible = name.contains(filter) || path.contains(filter);
         }
-    }
 
-    startNextThumbnail();
+        item->setHidden(!visible);
+        ++it;
+    }
 }
 
-void MainWindow::handleThumbnailFailed(const QString &videoPath,
-                                       const QString &errorMessage)
+void MainWindow::handleItemDoubleClicked(QTreeWidgetItem *item, int column)
 {
-    qWarning() << "Thumbnail failed for" << videoPath << ":" << errorMessage;
+    Q_UNUSED(column);
 
-    pendingThumbnailVideos.removeOne(videoPath);
-    startNextThumbnail();
+    if (!item) {
+        return;
+    }
+
+    const QString filePath = item->data(0, Qt::UserRole).toString();
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
 }
 
 void MainWindow::loadConfiguration()
 {
     QSettings settings("video-browser", "video-browser");
     scanRootPath = settings.value("scanRoot").toString();
-
-    if (scanRootPath.isEmpty() || !QDir(scanRootPath).exists()) {
-        chooseDirectory();
-    }
 }
 
 void MainWindow::saveConfiguration() const
@@ -117,51 +133,72 @@ void MainWindow::saveConfiguration() const
     settings.setValue("scanRoot", scanRootPath);
 }
 
+void MainWindow::promptForScanFolder()
+{
+    const QString folder = QFileDialog::getExistingDirectory(
+        this,
+        "Choose video folder",
+        QDir::homePath()
+    );
+
+    if (!folder.isEmpty()) {
+        scanRootPath = folder;
+        saveConfiguration();
+    }
+}
+
 void MainWindow::scanVideoDirectories()
 {
-    if (scanRootPath.isEmpty() || !QDir(scanRootPath).exists()) {
-        chooseDirectory();
-        if (scanRootPath.isEmpty()) {
-            return;
-        }
+    addFolderItems(nullptr, scanRootPath);
+}
+
+void MainWindow::addFolderItems(QTreeWidgetItem *parentItem, const QString &folderPath)
+{
+    QDir dir(folderPath);
+
+    QFileInfoList entries = dir.entryInfoList(
+        QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot,
+        QDir::DirsFirst | QDir::Name
+    );
+
+    QTreeWidgetItem *folderItem = parentItem;
+
+    if (parentItem == nullptr) {
+        folderItem = new QTreeWidgetItem(videoList);
+        folderItem->setText(0, QFileInfo(folderPath).fileName());
+        folderItem->setText(1, "Folder");
+        folderItem->setData(0, Qt::UserRole, folderPath);
     }
 
-    const QStringList videoExtensions = {
-        "*.mp4", "*.mkv", "*.avi", "*.mov", "*.wmv",
-        "*.webm", "*.m4v", "*.mpg", "*.mpeg", "*.ts",
-        "*.m2ts", "*.flv", "*.3gp"
-    };
+    for (const QFileInfo &info : entries) {
+        if (info.isDir()) {
+            QTreeWidgetItem *childFolder = new QTreeWidgetItem(folderItem);
+            childFolder->setText(0, info.fileName());
+            childFolder->setText(1, "Folder");
+            childFolder->setData(0, Qt::UserRole, info.absoluteFilePath());
 
-    QDirIterator it(scanRootPath, videoExtensions, QDir::Files, QDirIterator::Subdirectories);
+            addFolderItems(childFolder, info.absoluteFilePath());
+        } else if (videoExtensions.contains("*" + info.suffix().toLower())) {
+            QTreeWidgetItem *videoItem = new QTreeWidgetItem(folderItem);
+            videoItem->setText(0, info.fileName());
+            videoItem->setText(1, "Video");
+            videoItem->setData(0, Qt::UserRole, info.absoluteFilePath());
+            videoItem->setIcon(0, QIcon());
 
-    while (it.hasNext()) {
-        const QString videoPath = it.next();
-        auto *item = new QListWidgetItem(QFileInfo(videoPath).fileName());
-        item->setData(Qt::UserRole, videoPath);
-        videoList->addItem(item);
-        queueThumbnail(videoPath);
+            queueThumbnail(info.absoluteFilePath());
+        }
     }
 }
 
 QString MainWindow::thumbnailPathForVideo(const QString &videoPath) const
 {
-    const QByteArray hash =
-        QCryptographicHash::hash(videoPath.toUtf8(), QCryptographicHash::Sha1).toHex();
-
-    return QDir::homePath() + "/.video-browser/thumbnails/" +
-           QString::fromUtf8(hash) + ".jpg";
+    QFileInfo info(videoPath);
+    return info.absolutePath() + "/" + info.completeBaseName() + ".jpg";
 }
 
 void MainWindow::queueThumbnail(const QString &videoPath)
 {
-    if (!thumbnailPaths.contains(videoPath)) {
-        thumbnailPaths.insert(videoPath, thumbnailPathForVideo(videoPath));
-    }
-
-    if (!pendingThumbnailVideos.contains(videoPath)) {
-        pendingThumbnailVideos.enqueue(videoPath);
-    }
-
+    pendingThumbnailVideos.enqueue(videoPath);
     if (pendingThumbnailVideos.size() == 1) {
         startNextThumbnail();
     }
@@ -174,7 +211,42 @@ void MainWindow::startNextThumbnail()
     }
 
     const QString videoPath = pendingThumbnailVideos.head();
-    const QString thumbnailPath = thumbnailPaths.value(videoPath);
+    const QString thumbPath = thumbnailPathForVideo(videoPath);
 
-    thumbnailGenerator->generate(videoPath, thumbnailPath, 10000);
+    thumbnailGenerator->generate(videoPath, thumbPath, 10000);
+}
+
+void MainWindow::handleThumbnailReady(const QString &videoPath,
+                                      const QString &thumbnailPath)
+{
+    if (!pendingThumbnailVideos.isEmpty()) {
+        pendingThumbnailVideos.dequeue();
+    }
+
+    thumbnailPaths[videoPath] = thumbnailPath;
+
+    QTreeWidgetItemIterator it(videoList);
+    while (*it) {
+        QTreeWidgetItem *item = *it;
+        if (item->data(0, Qt::UserRole).toString() == videoPath) {
+            item->setIcon(0, QIcon(thumbnailPath));
+            break;
+        }
+        ++it;
+    }
+
+    startNextThumbnail();
+}
+
+void MainWindow::handleThumbnailFailed(const QString &videoPath,
+                                       const QString &errorMessage)
+{
+    Q_UNUSED(videoPath);
+    Q_UNUSED(errorMessage);
+
+    if (!pendingThumbnailVideos.isEmpty()) {
+        pendingThumbnailVideos.dequeue();
+    }
+
+    startNextThumbnail();
 }
